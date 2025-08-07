@@ -127,13 +127,39 @@ const seekToTime = (timestamp) => {
 let customPlaylist = [];
 let currentChapterIndex = 0;
 let isCustomPlayback = false;
+let playbackListener = null;
+
+const stopPlaybackListener = () => {
+  const video = getVideoPlayer();
+  if (video && playbackListener) {
+    video.removeEventListener('timeupdate', playbackListener);
+    playbackListener = null;
+    console.log("Playback listener stopped.");
+  }
+};
+
+const setupPlaybackListener = (chapterEndTime) => {
+  const video = getVideoPlayer();
+  if (!video) return;
+
+  stopPlaybackListener(); // Ensure only one listener is active
+
+  playbackListener = () => {
+    // If the video's current time is very close to the end of the chapter
+    if (video.currentTime >= chapterEndTime - 1 && video.currentTime < chapterEndTime + 1) {
+      playNextChapter();
+    }
+  };
+
+  video.addEventListener('timeupdate', playbackListener);
+  console.log(`Playback listener started, waiting for time: ${chapterEndTime}`);
+};
 
 const playNextChapter = () => {
-  if (!isCustomPlayback || customPlaylist.length === 0) return;
-
-  if (currentChapterIndex >= customPlaylist.length) {
-    console.log("Custom playlist finished");
+  if (!isCustomPlayback || currentChapterIndex >= customPlaylist.length) {
+    console.log("Custom playlist finished or playback stopped");
     isCustomPlayback = false;
+    stopPlaybackListener();
     return;
   }
 
@@ -141,20 +167,14 @@ const playNextChapter = () => {
   console.log(`Playing chapter ${currentChapterIndex + 1}/${customPlaylist.length}: ${chapter.title}`);
   
   if (seekToTime(chapter.timestamp)) {
+    // Prepare for the next chapter
     currentChapterIndex++;
-    
-    // Calculate when to play next chapter
     if (currentChapterIndex < customPlaylist.length) {
-      const currentSeconds = parseTimestamp(chapter.timestamp);
-      const nextSeconds = parseTimestamp(customPlaylist[currentChapterIndex].timestamp);
-      const duration = nextSeconds - currentSeconds;
-      
-      if (duration > 0) {
-        setTimeout(playNextChapter, duration * 1000);
-      } else {
-        // If timestamps are out of order or equal, wait 5 seconds
-        setTimeout(playNextChapter, 5000);
-      }
+      const currentChapterEndTime = parseTimestamp(customPlaylist[currentChapterIndex].timestamp);
+      setupPlaybackListener(currentChapterEndTime);
+    } else {
+      // Last chapter, stop playback listener
+      stopPlaybackListener();
     }
   }
 };
@@ -165,8 +185,18 @@ const startCustomPlayback = (chapters) => {
   isCustomPlayback = true;
   
   console.log("Starting custom playback with", chapters.length, "chapters");
-  playNextChapter();
+  
+  // Start the first chapter
+  if (customPlaylist.length > 0) {
+    seekToTime(customPlaylist[0].timestamp);
+    if (customPlaylist.length > 1) {
+      const firstChapterEndTime = parseTimestamp(customPlaylist[1].timestamp);
+      setupPlaybackListener(firstChapterEndTime);
+    }
+    currentChapterIndex = 1;
+  }
 };
+
 
 // Enhanced debugging function
 const debugChapterElements = () => {

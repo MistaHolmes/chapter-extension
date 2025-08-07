@@ -112,13 +112,20 @@
     }
 
     .drag-handle {
-      font-size: 20px;
-      cursor: grab;
-      color: #aaa;
-      padding-left: 10px;
-      display: flex;
-      align-items: center;
+        width: 16px;
+        height: 16px;
+        cursor: grab;
+        opacity: 0.5;
+        padding-left: 10px;
+        display: flex;
+        align-items: center;
+        background-image: url('drag.svg');
+        background-repeat: no-repeat;
+        background-position: center;
     }
+  .drag-handle:hover {
+    opacity: 0.8;
+  }
   </style>
 </head>
 <body>
