@@ -11,13 +11,11 @@ function renderChapters(chapters) {
     const li = document.createElement("li");
     li.className = "chapter-item";
     li.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-        <span class="chapter-timestamp">${ch.timestamp}</span><br>
+    <div class="chapter-details">
+        <span class="chapter-timestamp">${ch.timestamp}</span>
         <span class="chapter-title">${ch.title}</span>
-        </div>
-        <div class="drag-handle" style="cursor: grab;">≡</div>
     </div>
+    <div class="drag-handle">⋮⋮</div>
     `;
     li.dataset.index = index;
     li.dataset.timestamp = ch.timestamp;
@@ -25,17 +23,21 @@ function renderChapters(chapters) {
   });
 
   // Initialize Sortable after rendering
-  new Sortable(list, {
-    animation: 150,
-    ghostClass: "dragging",
-    handle: ".drag-handle",
-    onEnd: function(evt) {
-      console.log("🔄 Chapter reordered");
-      updateChapterOrder();
-    }
-  });
-
-  console.log("✅ Chapters rendered and sortable initialized");
+  const sortableList = document.getElementById("chapterList");
+  if (sortableList) {
+    new Sortable(sortableList, {
+      animation: 150,
+      ghostClass: "dragging",
+      handle: ".drag-handle", // This is the key: only drag from the handle
+      onEnd: function(evt) {
+        console.log("🔄 Chapter reordered");
+        updateChapterOrder();
+      }
+    });
+    console.log("✅ Chapters rendered and sortable initialized");
+  } else {
+    console.error("❌ Chapter list element not found for Sortable initialization.");
+  }
 }
 
 function updateChapterOrder() {
@@ -62,9 +64,9 @@ function requestChapters() {
 
     console.log("🌐 Current tab URL:", tabs[0].url);
 
-    if (!tabs[0].url.includes("youtube.com")) {
+    if (!tabs[0].url.includes("youtube.com/watch")) {
       document.getElementById("chapterList").innerHTML = 
-        '<li class="empty-state">Please navigate to a YouTube video</li>';
+        '<li class="empty-state">Please navigate to a YouTube video page</li>';
       return;
     }
 
@@ -132,14 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 100);
 
   document.getElementById("play-btn").addEventListener("click", playCustomOrder);
-  
-  // Also add a manual refresh button for debugging
-  const refreshBtn = document.createElement("button");
-  refreshBtn.textContent = "🔄 Refresh";
-  refreshBtn.style.marginTop = "10px";
-  refreshBtn.style.fontSize = "12px";
-  refreshBtn.addEventListener("click", requestChapters);
-  document.body.appendChild(refreshBtn);
 });
 
 // Listen for messages from content script

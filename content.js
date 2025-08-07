@@ -282,6 +282,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     const chapters = getChapters();
     console.log("Responding with chapters:", chapters);
     sendResponse({ chapters });
+    // It's crucial to return true to indicate you will send a response asynchronously
+    return true;
   }
   
   if (msg.type === "PLAY_CUSTOM_ORDER") {
