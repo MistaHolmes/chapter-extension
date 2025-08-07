@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Chapter Reorder</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      width: 320px;
+      padding: 16px;
+      margin: 0;
+      background: #f8f9fa;
+    }
+
+    h3 {
+      margin: 0 0 16px 0;
+      color: #333;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    ul#chapterList {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 16px 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    li.chapter-item {
+      background: white;
+      margin: 6px 0;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: grab;
+      border: 1px solid #e1e5e9;
+      transition: all 0.2s ease;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    li.chapter-item:hover {
+      background: #f0f7ff;
+      border-color: #c1d5f0;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .dragging {
+      background: #e3f2fd !important;
+      transform: rotate(3deg);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .sortable-ghost {
+      opacity: 0.5;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    button:active {
+      background: #0d47a1;
+      transform: translateY(1px);
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #e1e5e9;
+    }
+
+    .chapter-timestamp {
+      color: #1976d2;
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+    }
+
+    .chapter-title {
+      color: #333;
+    }
+
+    .drag-hint {
+      font-size: 11px;
+      color: #888;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h3>🎬 Chapter Reorder</h3>
+  <div class="drag-hint">Drag chapters to reorder them</div>
+  <ul id="chapterList">
+    <li class="empty-state">Loading chapters...</li>
+  </ul>
+  <button id="play-btn">▶️ Play Custom Order</button>
+  
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
