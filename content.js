@@ -10,102 +10,67 @@ function parseTimestamp(ts) {
 const getChapters = () => {
   console.log("Getting chapters...");
   
+  // Clear stored chapters on refresh
+  const videoId = getVideoIdFromUrl(location.href);
+  if (videoId) {
+    chrome.storage.local.remove(`chapters_${videoId}`, () => {
+      console.log("Cleared stored chapters for video:", videoId);
+    });
+  }
+  
   // Try multiple selectors for YouTube chapters
   const selectors = [
     "ytd-macro-markers-list-item-renderer",
     "ytd-chapter-renderer",
-    "[class*='chapter']",
-    "[class*='macro-marker']",
     "ytd-engagement-panel-section-list-renderer[target-id='engagement-panel-macro-markers-description-chapters'] ytd-macro-markers-list-item-renderer"
   ];
   
   let elements = [];
-  let foundSelector = null;
-  
   for (const selector of selectors) {
     elements = document.querySelectorAll(selector);
-    console.log(`Selector "${selector}" found ${elements.length} elements`);
-    if (elements.length > 0) {
-      foundSelector = selector;
-      break;
-    }
+    if (elements.length > 0) break;
   }
   
-  if (elements.length === 0) {
-    console.log("No chapter elements found with any selector");
-    
-    // Debug: Log all elements that might be chapters
-    const allElements = document.querySelectorAll("*");
-    let potentialChapters = [];
-    allElements.forEach(el => {
-      if (el.className && typeof el.className === 'string') {
-        if (el.className.includes('chapter') || 
-            el.className.includes('marker') || 
-            el.className.includes('macro')) {
-          potentialChapters.push({
-            element: el,
-            className: el.className,
-            textContent: el.textContent?.substring(0, 100)
-          });
-        }
-      }
-    });
-    
-    console.log("Potential chapter elements found:", potentialChapters);
-    return [];
-  }
-
-  console.log(`Using selector: ${foundSelector}`);
+  if (elements.length === 0) return [];
   
-  const chapters = [...elements].map((item, index) => {
-    console.log(`Processing element ${index}:`, item);
-    
-    // Try multiple ways to extract title and time
+  // Deduplicate chapters by timestamp
+  const chapterMap = new Map();
+  
+  [...elements].forEach(item => {
     let titleEl = item.querySelector("#title") || 
                   item.querySelector(".title") ||
-                  item.querySelector("[class*='title']") ||
-                  item.querySelector("yt-formatted-string");
+                  item.querySelector("[class*='title']");
     
     let timeEl = item.querySelector("#time") || 
                  item.querySelector(".time") ||
-                 item.querySelector("[class*='time']") ||
-                 item.querySelector("span");
+                 item.querySelector("[class*='time']");
     
-    // If we can't find specific elements, try to extract from text content
     if (!titleEl || !timeEl) {
       const textContent = item.textContent;
-      console.log("Full text content:", textContent);
-      
-      // Look for timestamp pattern (MM:SS or HH:MM:SS)
       const timestampMatch = textContent.match(/(\d{1,2}:\d{2}(?::\d{2})?)/);
       if (timestampMatch) {
         const timestamp = timestampMatch[1];
         const title = textContent.replace(timestamp, '').trim();
-        
         if (title && timestamp) {
-          console.log("Extracted from text - Title:", title, "Timestamp:", timestamp);
-          return { title, timestamp };
+          chapterMap.set(timestamp, { title, timestamp });
         }
       }
+    } else {
+      const title = titleEl.textContent.trim();
+      const timestamp = timeEl.textContent.trim();
+      if (title && timestamp) {
+        chapterMap.set(timestamp, { title, timestamp });
+      }
     }
-    
-    const title = titleEl?.textContent?.trim();
-    const timestamp = timeEl?.textContent?.trim();
-    
-    console.log("Extracted - Title:", title, "Timestamp:", timestamp);
-    console.log("Title element:", titleEl);
-    console.log("Time element:", timeEl);
-    
-    return { title, timestamp };
-  }).filter(ch => {
-    const isValid = ch.title && ch.timestamp && ch.timestamp.match(/\d{1,2}:\d{2}/);
-    console.log("Chapter valid:", isValid, ch);
-    return isValid;
   });
   
-  console.log("Final chapters:", chapters);
-  return chapters;
+  return Array.from(chapterMap.values());
 };
+
+function getVideoIdFromUrl(url) {
+  const urlObj = new URL(url);
+  return urlObj.searchParams.get("v");
+}
 
 const getVideoPlayer = () => {
   return document.querySelector("video");
@@ -120,169 +85,73 @@ const seekToTime = (timestamp) => {
 
   const seconds = parseTimestamp(timestamp);
   video.currentTime = seconds;
-  console.log(`Seeked to ${timestamp} (${seconds} seconds)`);
   return true;
 };
 
 let customPlaylist = [];
 let currentChapterIndex = 0;
 let isCustomPlayback = false;
-let playbackListener = null;
+let playbackTimeout = null;
 
-const stopPlaybackListener = () => {
-  const video = getVideoPlayer();
-  if (video && playbackListener) {
-    video.removeEventListener('timeupdate', playbackListener);
-    playbackListener = null;
-    console.log("Playback listener stopped.");
+const stopPlayback = () => {
+  if (playbackTimeout) {
+    clearTimeout(playbackTimeout);
+    playbackTimeout = null;
   }
-};
-
-const setupPlaybackListener = (chapterEndTime) => {
-  const video = getVideoPlayer();
-  if (!video) return;
-
-  stopPlaybackListener(); // Ensure only one listener is active
-
-  playbackListener = () => {
-    // If the video's current time is very close to the end of the chapter
-    if (video.currentTime >= chapterEndTime - 1 && video.currentTime < chapterEndTime + 1) {
-      playNextChapter();
-    }
-  };
-
-  video.addEventListener('timeupdate', playbackListener);
-  console.log(`Playback listener started, waiting for time: ${chapterEndTime}`);
+  isCustomPlayback = false;
 };
 
 const playNextChapter = () => {
   if (!isCustomPlayback || currentChapterIndex >= customPlaylist.length) {
-    console.log("Custom playlist finished or playback stopped");
-    isCustomPlayback = false;
-    stopPlaybackListener();
+    stopPlayback();
     return;
   }
 
   const chapter = customPlaylist[currentChapterIndex];
-  console.log(`Playing chapter ${currentChapterIndex + 1}/${customPlaylist.length}: ${chapter.title}`);
+  console.log(`▶️ Now playing chapter ${currentChapterIndex + 1}/${customPlaylist.length}: ${chapter.title}`);
   
-  if (seekToTime(chapter.timestamp)) {
-    // Prepare for the next chapter
-    currentChapterIndex++;
-    if (currentChapterIndex < customPlaylist.length) {
-      const currentChapterEndTime = parseTimestamp(customPlaylist[currentChapterIndex].timestamp);
-      setupPlaybackListener(currentChapterEndTime);
-    } else {
-      // Last chapter, stop playback listener
-      stopPlaybackListener();
-    }
+  if (!seekToTime(chapter.timestamp)) {
+    stopPlayback();
+    return;
+  }
+
+  currentChapterIndex++;
+  
+  // Play next chapter if available
+  if (currentChapterIndex < customPlaylist.length) {
+    const currentSeconds = parseTimestamp(chapter.timestamp);
+    const nextSeconds = parseTimestamp(customPlaylist[currentChapterIndex].timestamp);
+    const duration = Math.max(100, (nextSeconds - currentSeconds) * 1000);
+    
+    playbackTimeout = setTimeout(playNextChapter, duration);
+  } else {
+    stopPlayback();
+    console.log("✅ Custom playlist finished");
   }
 };
 
 const startCustomPlayback = (chapters) => {
+  stopPlayback();
+  
   customPlaylist = chapters;
   currentChapterIndex = 0;
   isCustomPlayback = true;
   
-  console.log("Starting custom playback with", chapters.length, "chapters");
+  console.log(`🎬 Starting custom playback with ${customPlaylist.length} chapters`);
   
-  // Start the first chapter
-  if (customPlaylist.length > 0) {
-    seekToTime(customPlaylist[0].timestamp);
-    if (customPlaylist.length > 1) {
-      const firstChapterEndTime = parseTimestamp(customPlaylist[1].timestamp);
-      setupPlaybackListener(firstChapterEndTime);
-    }
-    currentChapterIndex = 1;
-  }
-};
-
-
-// Enhanced debugging function
-const debugChapterElements = () => {
-  console.log("🔍 DEBUG: Scanning entire page for chapter-like elements...");
-  
-  // Look for any element containing time-like patterns
-  const allElements = document.querySelectorAll("*");
-  const timePattern = /\d{1,2}:\d{2}(?::\d{2})?/;
-  
-  let foundElements = [];
-  allElements.forEach(el => {
-    if (el.textContent && timePattern.test(el.textContent) && el.textContent.length < 200) {
-      foundElements.push({
-        element: el,
-        tagName: el.tagName,
-        className: el.className,
-        textContent: el.textContent.trim(),
-        parent: el.parentElement?.tagName + '.' + el.parentElement?.className
-      });
-    }
-  });
-  
-  console.log("🕒 Elements containing timestamps:", foundElements);
-  
-  // Also check for YouTube-specific elements
-  const ytElements = document.querySelectorAll("[class*='ytd-']");
-  console.log("🎬 YouTube-specific elements count:", ytElements.length);
-  
-  const chapterLikeElements = [];
-  ytElements.forEach(el => {
-    if (el.className.includes('macro') || 
-        el.className.includes('chapter') || 
-        el.className.includes('marker')) {
-      chapterLikeElements.push({
-        className: el.className,
-        textContent: el.textContent?.substring(0, 100)
-      });
-    }
-  });
-  
-  console.log("📚 Chapter-like YouTube elements:", chapterLikeElements);
-};
-
-// Function to check multiple times with enhanced debugging
-const checkForChapters = (attempt = 1, maxAttempts = 10) => {
-  console.log(`🔍 Checking for chapters - attempt ${attempt}/${maxAttempts}`);
-  
-  if (attempt === 1) {
-    debugChapterElements();
-  }
-  
-  const chapters = getChapters();
-  
-  if (chapters.length > 0) {
-    console.log("✅ Chapters found, sending to popup:", chapters);
-    chrome.runtime.sendMessage({ type: "CHAPTERS", chapters }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.log("Error sending message (this is normal if popup is closed):", chrome.runtime.lastError.message);
-      }
-    });
-    return;
-  }
-  
-  if (attempt < maxAttempts) {
-    console.log(`❌ No chapters found on attempt ${attempt}, trying again in 2 seconds...`);
-    setTimeout(() => checkForChapters(attempt + 1, maxAttempts), 2000);
-  } else {
-    console.log("❌ No chapters found after all attempts");
-    console.log("💡 Try opening the description panel or chapters panel manually");
-  }
+  // Start playing the first chapter
+  playNextChapter();
 };
 
 // Initialize when page loads
 const initializeExtension = () => {
-  console.log("🚀 Initializing extension...");
-  console.log("Current URL:", window.location.href);
-  console.log("Document ready state:", document.readyState);
+  if (!window.location.href.includes('/watch?v=')) return;
   
-  // Check if we're on a video page
-  if (!window.location.href.includes('/watch?v=')) {
-    console.log("⚠️ Not on a video page, skipping initialization");
-    return;
+  // Clear stored chapters on page load
+  const videoId = getVideoIdFromUrl(window.location.href);
+  if (videoId) {
+    chrome.storage.local.remove(`chapters_${videoId}`);
   }
-  
-  // Start checking for chapters with a longer initial delay
-  setTimeout(() => checkForChapters(), 3000);
 };
 
 if (document.readyState === "loading") {
@@ -291,28 +160,10 @@ if (document.readyState === "loading") {
   initializeExtension();
 }
 
-// Also try to initialize when navigation happens (YouTube is a SPA)
-let lastUrl = location.href;
-new MutationObserver(() => {
-  const url = location.href;
-  if (url !== lastUrl) {
-    lastUrl = url;
-    console.log("🔄 YouTube navigation detected to:", url);
-    if (url.includes('/watch?v=')) {
-      setTimeout(() => checkForChapters(), 3000);
-    }
-  }
-}).observe(document, { subtree: true, childList: true });
-
-// Listen for messages from popup
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log("📨 Received message:", msg.type);
-  
   if (msg.type === "GET_CHAPTERS") {
     const chapters = getChapters();
-    console.log("Responding with chapters:", chapters);
     sendResponse({ chapters });
-    // It's crucial to return true to indicate you will send a response asynchronously
     return true;
   }
   
@@ -324,5 +175,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "SEEK_TO_CHAPTER") {
     const success = seekToTime(msg.timestamp);
     sendResponse({ success });
+  }
+  
+  if (msg.type === "STOP_PLAYBACK") {
+    stopPlayback();
+    sendResponse({ success: true });
   }
 });
