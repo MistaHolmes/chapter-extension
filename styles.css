@@ -1,0 +1,276 @@
+/* YouTube Chapter Reorder Extension Styles */
+
+.chapter-reorder-container {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-family: 'Roboto', Arial, sans-serif;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.chapter-header {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.chapter-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.chapter-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.chapter-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background: rgba(255,255,255,0.2);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.chapter-btn:hover {
+  background: rgba(255,255,255,0.3);
+  transform: translateY(-1px);
+}
+
+.chapter-btn.primary {
+  background: #ff4444;
+  border-color: #ff4444;
+}
+
+.chapter-btn.primary:hover {
+  background: #ff6666;
+}
+
+.chapters-panel {
+  max-height: 400px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 0 0 8px 8px;
+  transition: all 0.3s ease;
+}
+
+.chapters-panel.hidden {
+  display: none;
+}
+
+.chapters-list {
+  padding: 8px;
+}
+
+.chapter-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  margin: 4px 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: grab;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.chapter-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-color: #667eea;
+}
+
+.chapter-item.dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.chapter-item.current {
+  background: #e3f2fd;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33,150,243,0.2);
+}
+
+.chapter-item.current::before {
+  content: "▶ NOW PLAYING";
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  background: #2196f3;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.chapter-drag-handle {
+  color: #999;
+  margin-right: 12px;
+  cursor: grab;
+  font-weight: bold;
+  user-select: none;
+}
+
+.chapter-drag-handle:active {
+  cursor: grabbing;
+}
+
+.chapter-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.chapter-title {
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chapter-time {
+  font-size: 12px;
+  color: #666;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.chapter-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: 12px;
+}
+
+.chapter-actions button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.chapter-play-btn {
+  background: #4caf50;
+  color: white;
+}
+
+.chapter-play-btn:hover {
+  background: #66bb6a;
+  transform: scale(1.1);
+}
+
+.chapter-move-up,
+.chapter-move-down {
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.chapter-move-up:hover,
+.chapter-move-down:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+/* Dark mode support for YouTube dark theme */
+[dark] .chapter-reorder-container {
+  background: #212121;
+  border-color: #333;
+  color: #fff;
+}
+
+[dark] .chapters-panel {
+  background: #181818;
+}
+
+[dark] .chapter-item {
+  background: #2a2a2a;
+  border-color: #404040;
+  color: #fff;
+}
+
+[dark] .chapter-item:hover {
+  border-color: #667eea;
+}
+
+[dark] .chapter-title {
+  color: #fff;
+}
+
+[dark] .chapter-time {
+  color: #aaa;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chapter-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .chapter-controls {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .chapter-btn {
+    flex: 1;
+  }
+  
+  .chapter-item {
+    padding: 8px;
+  }
+  
+  .chapter-drag-handle {
+    margin-right: 8px;
+  }
+}
+
+/* Scrollbar styling */
+.chapters-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chapters-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chapters-panel::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chapters-panel::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Animation for chapter transitions */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.chapter-item.current {
+  animation: pulse 2s infinite;
+}
