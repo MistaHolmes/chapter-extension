@@ -1,231 +1,163 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>YouTube Chapter Reorder</title>
+  <meta charset="utf-8">
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      width: 320px;
-      padding: 16px;
-      margin: 0;
-      background: #f8f9fa;
-    }
-
-    h3 {
-      margin: 0 0 16px 0;
-      color: #333;
-      font-size: 16px;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .controls {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    ul#chapterList {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 16px 0;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-
-    li.chapter-item {
-      background: white;
-      margin: 6px 0;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #e1e5e9;
-      transition: all 0.2s ease;
-      font-size: 13px;
-      line-height: 1.4;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-
-    li.chapter-item:hover {
-      background: #f0f7ff;
-      border-color: #c1d5f0;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .chapter-item.playing {
-      background: #e3f2fd !important;
-      border-color: #1976d2 !important;
-      box-shadow: 0 2px 12px rgba(25, 118, 210, 0.3);
-    }
-
-    .dragging {
-      background: #e3f2fd !important;
-      transform: rotate(3deg);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-
-    .sortable-ghost {
-      opacity: 0.5;
-    }
-
-    button {
-      flex: 1;
-      padding: 12px;
-      background: #1976d2;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    button:hover:not(:disabled) {
-      background: #1565c0;
-      transform: translateY(-1px);
-    }
-
-    button:active:not(:disabled) {
-      background: #0d47a1;
-      transform: translateY(0);
-    }
-
-    button:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    button.stop {
-      background: #d32f2f;
-    }
-
-    button.stop:hover:not(:disabled) {
-      background: #c62828;
-    }
-
-    button.stop:active:not(:disabled) {
-      background: #b71c1c;
-    }
-
-    .empty-state {
-      text-align: center;
-      color: #666;
-      font-style: italic;
+      width: 300px;
       padding: 20px;
-      background: white;
-      border-radius: 8px;
-      border: 1px solid #e1e5e9;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
     }
 
-    .chapter-details {
-      flex-grow: 1;
-      display: flex;
-      flex-direction: column;
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
     }
 
-    .chapter-timestamp {
-      color: #1976d2;
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
       font-weight: 600;
-      font-family: 'Courier New', monospace;
     }
 
-    .chapter-title {
-      color: #333;
-      margin-top: 4px;
-      word-break: break-word;
+    .header p {
+      margin: 5px 0 0 0;
+      opacity: 0.8;
+      font-size: 14px;
     }
 
-    .drag-handle {
-      width: 20px;
-      height: 20px;
-      cursor: grab;
-      opacity: 0.3;
-      margin-left: 10px;
+    .feature {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+      backdrop-filter: blur(10px);
+    }
+
+    .feature-title {
+      font-weight: 600;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: relative;
+      gap: 8px;
     }
 
-    .drag-handle:hover {
-      opacity: 0.6;
-    }
-
-    .drag-handle:active {
-      cursor: grabbing;
-    }
-
-    /* Create drag handle dots with CSS */
-    .drag-handle::before {
-      content: '⋮⋮';
-      font-size: 16px;
-      color: #666;
-      letter-spacing: -2px;
+    .feature-desc {
+      font-size: 13px;
+      opacity: 0.9;
+      line-height: 1.4;
     }
 
     .status {
-      font-size: 12px;
-      color: #666;
       text-align: center;
-      margin-bottom: 8px;
-      padding: 4px 8px;
-      background: #fff3cd;
-      border: 1px solid #ffeaa7;
-      border-radius: 4px;
-      display: none;
+      padding: 10px;
+      margin: 15px 0;
+      border-radius: 6px;
+      font-size: 14px;
     }
 
     .status.active {
-      display: block;
+      background: rgba(76, 175, 80, 0.3);
+      border: 1px solid rgba(76, 175, 80, 0.5);
+    }
+
+    .status.inactive {
+      background: rgba(255, 152, 0, 0.3);
+      border: 1px solid rgba(255, 152, 0, 0.5);
+    }
+
+    .instructions {
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+      padding: 12px;
+      margin-top: 15px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .instructions h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+
+    .instructions ol {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .instructions li {
+      margin: 4px 0;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 11px;
+      opacity: 0.7;
     }
   </style>
 </head>
 <body>
-  <h3>
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14,2 14,8 20,8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10,9 9,9 8,9"/>
-    </svg>
-    YouTube Chapter Reorder
-  </h3>
-  
-  <div class="status" id="status">
-    Ready to play custom order
-  </div>
-  
-  <ul id="chapterList">
-    <li class="empty-state">Loading chapters...</li>
-  </ul>
-  
-  <div class="controls">
-    <button id="play-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polygon points="5,3 19,12 5,21"/>
-      </svg>
-      Play Custom Order
-    </button>
+  <div class="header">
+    <h1>📹 Chapter Reorder</h1>
+    <p>Rearrange YouTube chapters</p>
   </div>
 
-  <script src="sortable.min.js"></script>
-  <script src="popup.js"></script>
+  <div id="status" class="status">
+    Checking YouTube page...
+  </div>
+
+  <div class="feature">
+    <div class="feature-title">🔄 Drag & Drop</div>
+    <div class="feature-desc">Easily rearrange chapters by dragging them up or down</div>
+  </div>
+
+  <div class="feature">
+    <div class="feature-title">▶️ Custom Playback</div>
+    <div class="feature-desc">Play chapters in your custom order automatically</div>
+  </div>
+
+  <div class="feature">
+    <div class="feature-title">💾 Smart Detection</div>
+    <div class="feature-desc">Automatically finds chapters from video descriptions</div>
+  </div>
+
+  <div class="instructions">
+    <h3>How to use:</h3>
+    <ol>
+      <li>Go to any YouTube video</li>
+      <li>Look for the "Chapter Reorder" panel</li>
+      <li>Click "Show Chapters" to see all chapters</li>
+      <li>Drag chapters to rearrange them</li>
+      <li>Click "Play Custom Order" to start</li>
+    </ol>
+  </div>
+
+  <div class="footer">
+    v1.0 - YouTube Chapter Reorder Extension
+  </div>
+
+  <script>
+    // Check if we're on a YouTube page
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      const currentTab = tabs[0];
+      const statusEl = document.getElementById('status');
+      
+      if (currentTab.url && currentTab.url.includes('youtube.com/watch')) {
+        statusEl.textContent = '✅ Active on YouTube video';
+        statusEl.className = 'status active';
+      } else if (currentTab.url && currentTab.url.includes('youtube.com')) {
+        statusEl.textContent = '⚠️ Navigate to a video to use';
+        statusEl.className = 'status inactive';
+      } else {
+        statusEl.textContent = '❌ Not on YouTube';
+        statusEl.className = 'status inactive';
+      }
+    });
+  </script>
 </body>
 </html>

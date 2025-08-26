@@ -2,16 +2,24 @@
   "manifest_version": 3,
   "name": "YouTube Chapter Reorder",
   "version": "1.0",
-  "description": "Rearrange and play YouTube video chapters.",
-  "permissions": ["scripting", "activeTab", "storage"],
-  "host_permissions": ["https://www.youtube.com/*"],
-  "action": {
-    "default_popup": "popup.html"
-  },
+  "description": "Rearrange YouTube video chapters and create custom playlists",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
-      "js": ["content.js"]
+      "matches": ["*://*.youtube.com/watch*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_end"
     }
-  ]
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Chapter Reorder"
+  }
 }
